@@ -2,7 +2,6 @@
 
 interface ImportMetaEnv {
     readonly VITE_TMDB_TOKEN: string;
-    // Добавь сюда другие переменные, если будут
   }
   
   interface ImportMeta {
