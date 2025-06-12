@@ -1,11 +1,13 @@
 import React from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createNote } from '../../services/noteService';
+import ErrorMessage from '../ErrorMessage/';
 import css from './NoteForm.module.css';
 
 interface NoteFormProps {
   onClose: () => void;
-  onCreateNote: (note: { title: string; content?: string; tag: string }) => void;
 }
 
 interface FormValues {
@@ -14,9 +16,25 @@ interface FormValues {
   tag: string;
 }
 
-const NoteForm: React.FC<NoteFormProps> = ({ onClose, onCreateNote }) => {
+const NoteForm: React.FC<NoteFormProps> = ({ onClose }) => {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: createNote,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      onClose();
+    },
+    onError: error => {
+      console.error('Note creation failed:', error);
+    },
+  });
+
   const validationSchema = Yup.object({
-    title: Yup.string().min(3, 'Min 3 characters').max(50, 'Max 50 characters').required('Required'),
+    title: Yup.string()
+      .min(3, 'Min 3 characters')
+      .max(50, 'Max 50 characters')
+      .required('Required'),
     content: Yup.string().max(500, 'Max 500 characters'),
     tag: Yup.string()
       .oneOf(['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'], 'Invalid tag')
@@ -31,7 +49,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ onClose, onCreateNote }) => {
     },
     validationSchema,
     onSubmit: values => {
-      onCreateNote({
+      mutation.mutate({
         title: values.title,
         content: values.content.trim() === '' ? undefined : values.content,
         tag: values.tag,
@@ -54,7 +72,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ onClose, onCreateNote }) => {
           autoFocus
         />
         {formik.touched.title && formik.errors.title && (
-          <div className={css.error}>{formik.errors.title}</div>
+          <ErrorMessage message={formik.errors.title} />
         )}
       </div>
 
@@ -70,7 +88,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ onClose, onCreateNote }) => {
           rows={4}
         />
         {formik.touched.content && formik.errors.content && (
-          <div className={css.error}>{formik.errors.content}</div>
+          <ErrorMessage message={formik.errors.content} />
         )}
       </div>
 
@@ -91,7 +109,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ onClose, onCreateNote }) => {
           <option value="Shopping">Shopping</option>
         </select>
         {formik.touched.tag && formik.errors.tag && (
-          <div className={css.error}>{formik.errors.tag}</div>
+          <ErrorMessage message={formik.errors.tag} />
         )}
       </div>
 
