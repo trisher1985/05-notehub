@@ -32,11 +32,15 @@ export const fetchNotes = async ({
   perPage = 12,
   search = '',
 }: FetchNotesParams): Promise<FetchNotesResponse> => {
-  const params: Record<string, any> = { page, perPage };
-  if (search) params.search = search;
+  try {
+    const params: Record<string, any> = { page, perPage };
+    if (search) params.search = search;
 
-  const { data }: AxiosResponse<FetchNotesResponse> = await axiosInstance.get('/', { params });
-  return data;
+    const { data }: AxiosResponse<FetchNotesResponse> = await axiosInstance.get('/', { params });
+    return data;
+  } catch (error: any) {
+    throw new Error(`Failed to fetch notes: ${error.message || error}`);
+  }
 };
 
 interface CreateNotePayload {
@@ -46,11 +50,19 @@ interface CreateNotePayload {
 }
 
 export const createNote = async (note: CreateNotePayload): Promise<Note> => {
-  const { data }: AxiosResponse<Note> = await axiosInstance.post('/', note);
-  return data;
+  try {
+    const { data }: AxiosResponse<Note> = await axiosInstance.post('/', note);
+    return data;
+  } catch (error: any) {
+    throw new Error(`Failed to create note: ${error.message || error}`);
+  }
 };
 
 export const deleteNote = async (id: number): Promise<Note> => {
-  const { data }: AxiosResponse<Note> = await axiosInstance.delete(`/${id}`);
-  return data;
+  try {
+    const { data }: AxiosResponse<Note> = await axiosInstance.delete(`/${id}`);
+    return data;
+  } catch (error: any) {
+    throw new Error(`Failed to delete note with ID ${id}: ${error.message || error}`);
+  }
 };
