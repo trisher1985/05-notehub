@@ -1,9 +1,8 @@
 import React from 'react';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
+import { useFormik, FormikHelpers, ErrorMessage } from 'formik';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import * as Yup from 'yup';
 import { createNote } from '../../services/noteService';
-import ErrorMessage from '../ErrorMessage/';
 import css from './NoteForm.module.css';
 
 interface NoteFormProps {
@@ -13,8 +12,16 @@ interface NoteFormProps {
 interface FormValues {
   title: string;
   content: string;
-  tag: string;
+  tag: 'Todo' | 'Work' | 'Personal' | 'Meeting' | 'Shopping';
 }
+
+const validationSchema = Yup.object({
+  title: Yup.string().min(3, 'Min 3 characters').max(50, 'Max 50 characters').required('Required'),
+  content: Yup.string().max(500, 'Max 500 characters'),
+  tag: Yup.string()
+    .oneOf(['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'], 'Invalid tag')
+    .required('Required'),
+});
 
 const NoteForm: React.FC<NoteFormProps> = ({ onClose }) => {
   const queryClient = useQueryClient();
@@ -25,21 +32,19 @@ const NoteForm: React.FC<NoteFormProps> = ({ onClose }) => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       onClose();
     },
-    onError: error => {
-      console.error('Note creation failed:', error);
+    onError: (error: Error) => {
+      console.error('Note creation failed:', error.message);
     },
   });
 
-  const validationSchema = Yup.object({
-    title: Yup.string()
-      .min(3, 'Min 3 characters')
-      .max(50, 'Max 50 characters')
-      .required('Required'),
-    content: Yup.string().max(500, 'Max 500 characters'),
-    tag: Yup.string()
-      .oneOf(['Todo', 'Work', 'Personal', 'Meeting', 'Shopping'], 'Invalid tag')
-      .required('Required'),
-  });
+  const handleSubmit = (values: FormValues, { setSubmitting }: FormikHelpers<FormValues>) => {
+    mutation.mutate({
+      title: values.title,
+      content: values.content.trim() === '' ? undefined : values.content,
+      tag: values.tag,
+    });
+    setSubmitting(false);
+  };
 
   const formik = useFormik<FormValues>({
     initialValues: {
@@ -48,13 +53,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ onClose }) => {
       tag: 'Todo',
     },
     validationSchema,
-    onSubmit: values => {
-      mutation.mutate({
-        title: values.title,
-        content: values.content.trim() === '' ? undefined : values.content,
-        tag: values.tag,
-      });
-    },
+    onSubmit: handleSubmit,
   });
 
   return (
@@ -71,9 +70,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ onClose }) => {
           value={formik.values.title}
           autoFocus
         />
-        {formik.touched.title && formik.errors.title && (
-          <ErrorMessage message={formik.errors.title} />
-        )}
+        <ErrorMessage name="title" component="div" className={css.error} />
       </div>
 
       <div className={css.formGroup}>
@@ -87,9 +84,7 @@ const NoteForm: React.FC<NoteFormProps> = ({ onClose }) => {
           value={formik.values.content}
           rows={4}
         />
-        {formik.touched.content && formik.errors.content && (
-          <ErrorMessage message={formik.errors.content} />
-        )}
+        <ErrorMessage name="content" component="div" className={css.error} />
       </div>
 
       <div className={css.formGroup}>
@@ -108,13 +103,11 @@ const NoteForm: React.FC<NoteFormProps> = ({ onClose }) => {
           <option value="Meeting">Meeting</option>
           <option value="Shopping">Shopping</option>
         </select>
-        {formik.touched.tag && formik.errors.tag && (
-          <ErrorMessage message={formik.errors.tag} />
-        )}
+        <ErrorMessage name="tag" component="div" className={css.error} />
       </div>
 
       <div className={css.buttons}>
-        <button type="submit" className={css.submitButton} disabled={formik.isSubmitting}>
+        <button type="submit" className={css.submitButton} disabled={formik.isSubmitting || mutation.isPending}>
           Create
         </button>
         <button type="button" className={css.cancelButton} onClick={onClose}>
