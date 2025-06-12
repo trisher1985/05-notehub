@@ -1,36 +1,41 @@
-import React, { useEffect } from 'react';
-import ReactDOM from 'react-dom';
-import NoteForm from '../NoteForm/NoteForm';
-import css from './NoteModal.module.css';
+import css from "./NoteModal.module.css";
+import { createPortal } from "react-dom";
+import { useEffect } from "react";
+import NoteForm from "../NoteForm/NoteForm";
 
 interface NoteModalProps {
   onClose: () => void;
-  onCreateNote: (note: { title: string; content?: string; tag: string }) => void;
 }
 
-const modalRoot = document.getElementById('modal-root') || document.body;
-
-const NoteModal: React.FC<NoteModalProps> = ({ onClose, onCreateNote }) => {
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
-
-  const onBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose();
+export default function NoteModal({ onClose }: NoteModalProps) {
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
   };
 
-  return ReactDOM.createPortal(
-    <div className={css.backdrop} role="dialog" aria-modal="true" onClick={onBackdropClick}>
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div onClick={handleBackdropClick} className={css.backdrop} role="dialog" aria-modal="true">
       <div className={css.modal}>
-        <NoteForm onClose={onClose} onCreateNote={onCreateNote} />
+        <NoteForm onClose={onClose} />
       </div>
     </div>,
-    modalRoot
+    document.body
   );
-};
-
-export default NoteModal;
+}
