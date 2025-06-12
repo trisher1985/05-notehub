@@ -20,27 +20,28 @@ export default function App() {
     placeholderData: keepPreviousData,
   });
 
-  const modalOpenFn = (): void => {
+  const handleModalOpen = (): void => {
     setModalOpen(true);
   };
 
-  const modalCloseFn = (): void => {
+  const handleModalClose = (): void => {
     setModalOpen(false);
   };
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
-  const onChangeQuery = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const query = event.target.value;
-    setQuery(query);
+  const handleQueryChange = (value: string): void => {
+    setQuery(value);
     setCurrentPage(1);
   };
 
   return (
     <div className={css.app}>
       <header className={css.toolbar}>
-        <SearchBox onChange={onChangeQuery} value={query} />
+        <SearchBox onChange={handleQueryChange} value={query} />
+
         {loadNotes.isSuccess && loadNotes.data.totalPages > 1 && (
           <Pagination
             pageCount={loadNotes.data.totalPages}
@@ -48,21 +49,25 @@ export default function App() {
             currentPage={currentPage}
           />
         )}
-        <button className={css.button} onClick={modalOpenFn}>
+
+        <button className={css.button} onClick={handleModalOpen}>
           Create note +
         </button>
       </header>
+
       {loadNotes.isPending && !loadNotes.isSuccess && (
         <p className={css.loading}>Loading your notes...</p>
       )}
+
       {loadNotes.isError && (
         <p className={css.loaderror}>
-          An error occured: {JSON.stringify(loadNotes.error)}, please reload the
-          page!
+          An error occurred: {JSON.stringify(loadNotes.error)}, please reload the page!
         </p>
       )}
+
       {loadNotes.isSuccess && <NoteList notes={loadNotes.data.notes} />}
-      {modalOpen && <NoteModal onClose={modalCloseFn} />}
+
+      {modalOpen && <NoteModal onClose={handleModalClose} />}
     </div>
   );
 }
